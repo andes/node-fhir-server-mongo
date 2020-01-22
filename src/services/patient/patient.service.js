@@ -20,12 +20,14 @@ const { stringQueryBuilder,
 
 
 let getPatient = (base_version) => {
-	return require(resolveSchema(base_version, 'Patient'));};
+	return require(resolveSchema(base_version, 'Patient'));
+};
 
 let getMeta = (base_version) => {
-	return require(resolveSchema(base_version, 'Meta'));};
+	return require(resolveSchema(base_version, 'Meta'));
+};
 
-let buildStu3SearchQuery = (args) =>	 {
+let buildStu3SearchQuery = (args) => {
 
 	// Common search params
 	let { _content, _format, _id, _lastUpdated, _profile, _query, _security, _tag } = args;
@@ -214,7 +216,7 @@ let buildStu3SearchQuery = (args) =>	 {
 
 };
 
-let buildDstu2SearchQuery = (args) =>	 {
+let buildDstu2SearchQuery = (args) => {
 
 	// Common search params
 	let { _content, _format, _id, _lastUpdated, _profile, _query, _security, _tag } = args;
@@ -411,11 +413,13 @@ let buildDstu2SearchQuery = (args) =>	 {
  */
 module.exports.search = (args) => new Promise((resolve, reject) => {
 	logger.info('Patient >>> search');
-
 	let { base_version } = args;
 	let query = {};
 
-	if (base_version === VERSIONS['3_0_1']) {
+	// Agregue esta mersada para mantener la compatibilidad con la versión R4
+	if (base_version === VERSIONS['4_0_0']) {
+		query = buildStu3SearchQuery(args);
+	} else if (base_version === VERSIONS['3_0_1']) {
 		query = buildStu3SearchQuery(args);
 	} else if (base_version === VERSIONS['1_0_2']) {
 		query = buildDstu2SearchQuery(args);
@@ -425,7 +429,6 @@ module.exports.search = (args) => new Promise((resolve, reject) => {
 	let db = globals.get(CLIENT_DB);
 	let collection = db.collection(`${COLLECTION.PATIENT}_${base_version}`);
 	let Patient = getPatient(base_version);
-
 	// Query our collection for this observation
 	collection.find(query, (err, data) => {
 		if (err) {
@@ -435,7 +438,7 @@ module.exports.search = (args) => new Promise((resolve, reject) => {
 
 		// Patient is a patient cursor, pull documents out before resolving
 		data.toArray().then((patients) => {
-			patients.forEach(function(element, i, returnArray) {
+			patients.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Patient(element);
 			});
 			resolve(patients);
@@ -445,7 +448,6 @@ module.exports.search = (args) => new Promise((resolve, reject) => {
 
 module.exports.searchById = (args) => new Promise((resolve, reject) => {
 	logger.info('Patient >>> searchById');
-
 	let { base_version, id } = args;
 	let Patient = getPatient(base_version);
 
@@ -469,7 +471,6 @@ module.exports.create = (args, { req }) => new Promise((resolve, reject) => {
 	logger.info('Patient >>> create');
 
 	let resource = req.body;
-
 	let { base_version } = args;
 
 	// Grab an instance of our DB and collection (by version)
@@ -478,23 +479,22 @@ module.exports.create = (args, { req }) => new Promise((resolve, reject) => {
 
 	// Get current record
 	let Patient = getPatient(base_version);
-	let patient = new Patient(resource);
 
+	let patient = new Patient(resource);
 	// If no resource ID was provided, generate one.
 	let id = getUuid(patient);
 
 	// Create the resource's metadata
 	let Meta = getMeta(base_version);
-	patient.meta = new Meta({versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ')});
+	patient.meta = new Meta({ versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ') });
 
 	// Create the document to be inserted into Mongo
 	let doc = JSON.parse(JSON.stringify(patient.toJSON()));
-	Object.assign(doc, {id: id});
-
+	Object.assign(doc, { id: id });
 	// Create a clone of the object without the _id parameter before assigning a value to
 	// the _id parameter in the original document
 	let history_doc = Object.assign({}, doc);
-	Object.assign(doc, {_id: id});
+	Object.assign(doc, { _id: id });
 
 	// Insert our patient record
 	collection.insertOne(doc, (err) => {
@@ -521,7 +521,6 @@ module.exports.update = (args, { req }) => new Promise((resolve, reject) => {
 	logger.info('Patient >>> update');
 
 	let resource = req.body;
-
 	let { base_version, id } = args;
 
 	// Grab an instance of our DB and collection
@@ -546,7 +545,7 @@ module.exports.update = (args, { req }) => new Promise((resolve, reject) => {
 			patient.meta = meta;
 		} else {
 			let Meta = getMeta(base_version);
-			patient.meta = new Meta({versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ')});
+			patient.meta = new Meta({ versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ') });
 		}
 
 		let cleaned = JSON.parse(JSON.stringify(patient));
@@ -675,7 +674,7 @@ module.exports.history = (args, context) => new Promise((resolve, reject) => {
 
 		// Patient is a patient cursor, pull documents out before resolving
 		data.toArray().then((patients) => {
-			patients.forEach(function(element, i, returnArray) {
+			patients.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Patient(element);
 			});
 			resolve(patients);
@@ -711,7 +710,7 @@ module.exports.historyById = (args, context) => new Promise((resolve, reject) =>
 
 		// Patient is a patient cursor, pull documents out before resolving
 		data.toArray().then((patients) => {
-			patients.forEach(function(element, i, returnArray) {
+			patients.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Patient(element);
 			});
 			resolve(patients);

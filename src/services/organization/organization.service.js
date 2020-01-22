@@ -24,7 +24,7 @@ let getMeta = (base_version) => {
 	return require(resolveSchema(base_version, 'Meta'));
 };
 
-let buildStu3SearchQuery = (args) =>	 {
+let buildStu3SearchQuery = (args) => {
 
 	// Common search params
 	let { _content, _format, _id, _lastUpdated, _profile, _query, _security, _tag } = args;
@@ -59,7 +59,7 @@ let buildStu3SearchQuery = (args) =>	 {
 		}
 	}
 	if (name) {
-		ors.push({$or: [{name: stringQueryBuilder(name)}, {alias: stringQueryBuilder(name)}]});
+		ors.push({ $or: [{ name: stringQueryBuilder(name) }, { alias: stringQueryBuilder(name) }] });
 	}
 	if (ors.length !== 0) {
 		query.$and = ors;
@@ -129,7 +129,7 @@ let buildStu3SearchQuery = (args) =>	 {
 
 };
 
-let buildDstu2SearchQuery = (args) =>	 {
+let buildDstu2SearchQuery = (args) => {
 
 	// Common search params
 	let { _content, _format, _id, _lastUpdated, _profile, _query, _security, _tag } = args;
@@ -161,7 +161,7 @@ let buildDstu2SearchQuery = (args) =>	 {
 		}
 	}
 	if (name) {
-		ors.push({$or: [{name: stringQueryBuilder(name)}, {alias: stringQueryBuilder(name)}]});
+		ors.push({ $or: [{ name: stringQueryBuilder(name) }, { alias: stringQueryBuilder(name) }] });
 	}
 	if (ors.length !== 0) {
 		query.$and = ors;
@@ -235,11 +235,15 @@ module.exports.search = (args) => new Promise((resolve, reject) => {
 	let { base_version } = args;
 	let query = {};
 
-	if (base_version === VERSIONS['3_0_1']) {
+	// Agregue esta mersada para mantener la compatibilidad con la versión R4
+	if (base_version === VERSIONS['4_0_0']) {
 		query = buildStu3SearchQuery(args);
-	} else if (base_version === VERSIONS['1_0_2']) {
-		query = buildDstu2SearchQuery(args);
-	}
+	} else
+		if (base_version === VERSIONS['3_0_1']) {
+			query = buildStu3SearchQuery(args);
+		} else if (base_version === VERSIONS['1_0_2']) {
+			query = buildDstu2SearchQuery(args);
+		}
 
 	// Grab an instance of our DB and collection
 	let db = globals.get(CLIENT_DB);
@@ -255,7 +259,7 @@ module.exports.search = (args) => new Promise((resolve, reject) => {
 
 		// Organization is a organization cursor, pull documents out before resolving
 		data.toArray().then((organizations) => {
-			organizations.forEach(function(element, i, returnArray) {
+			organizations.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Organization(element);
 			});
 			resolve(organizations);
@@ -305,16 +309,15 @@ module.exports.create = (args, { req }) => new Promise((resolve, reject) => {
 
 	// Create the resource's metadata
 	let Meta = getMeta(base_version);
-	organization.meta = new Meta({versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ')});
+	organization.meta = new Meta({ versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ') });
 
 	// Create the document to be inserted into Mongo
 	let doc = JSON.parse(JSON.stringify(organization.toJSON()));
-	Object.assign(doc, {id: id});
-
+	Object.assign(doc, { id: id });
 	// Create a clone of the object without the _id parameter before assigning a value to
 	// the _id parameter in the original document
 	let history_doc = Object.assign({}, doc);
-	Object.assign(doc, {_id: id});
+	Object.assign(doc, { _id: id });
 
 	// Insert our organization record
 	collection.insertOne(doc, (err) => {
@@ -366,7 +369,7 @@ module.exports.update = (args, { req }) => new Promise((resolve, reject) => {
 			organization.meta = meta;
 		} else {
 			let Meta = getMeta(base_version);
-			organization.meta = new Meta({versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ')});
+			organization.meta = new Meta({ versionId: '1', lastUpdated: moment.utc().format('YYYY-MM-DDTHH:mm:ssZ') });
 		}
 
 		let cleaned = JSON.parse(JSON.stringify(organization));
@@ -494,7 +497,7 @@ module.exports.history = (args) => new Promise((resolve, reject) => {
 
 		// Organization is a organization cursor, pull documents out before resolving
 		data.toArray().then((organizations) => {
-			organizations.forEach(function(element, i, returnArray) {
+			organizations.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Organization(element);
 			});
 			resolve(organizations);
@@ -530,7 +533,7 @@ module.exports.historyById = (args) => new Promise((resolve, reject) => {
 
 		// Organization is a organization cursor, pull documents out before resolving
 		data.toArray().then((organizations) => {
-			organizations.forEach(function(element, i, returnArray) {
+			organizations.forEach(function (element, i, returnArray) {
 				returnArray[i] = new Organization(element);
 			});
 			resolve(organizations);
